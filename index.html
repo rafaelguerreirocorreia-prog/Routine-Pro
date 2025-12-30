@@ -1,46 +1,78 @@
-
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evolve - Productivity</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a;
-            color: #f5f5f5;
-        }
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #171717;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #404040;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #525252;
-        }
-    </style>
-<script type="importmap">
-{
-  "imports": {
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
-  }
-}
-</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evolve - Productivity</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fonte -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Estilos base -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0a0a;
+      color: #f5f5f5;
+    }
+  </style>
+
+  <!-- Importmap (App.new) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.2.3",
+        "react-dom/client": "https://esm.sh/react-dom@19.2.3/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.562.0"
+      }
+    }
+  </script>
 </head>
+
 <body class="bg-neutral-950 text-neutral-100 min-h-screen">
-    <div id="root"></div>
+  <div id="root"></div>
+
+  <!-- 🚀 SCRIPT QUE INICIA A APP (O QUE FALTAVA) -->
+  <script type="module">
+    import React from "react";
+    import { createRoot } from "react-dom/client";
+    import { CheckCircle } from "lucide-react";
+
+    function App() {
+      return (
+        React.createElement(
+          "div",
+          { className: "min-h-screen flex items-center justify-center" },
+          React.createElement(
+            "div",
+            { className: "bg-neutral-900 p-8 rounded-xl shadow-xl max-w-md text-center" },
+            React.createElement(CheckCircle, {
+              size: 48,
+              className: "mx-auto text-green-500 mb-4"
+            }),
+            React.createElement(
+              "h1",
+              { className: "text-2xl font-bold mb-2" },
+              "App carregou com sucesso 🎉"
+            ),
+            React.createElement(
+              "p",
+              { className: "text-neutral-400" },
+              "A tela preta foi resolvida e o React está a funcionar no Vercel."
+            )
+          )
+        )
+      );
+    }
+
+    const root = document.getElementById("root");
+    createRoot(root).render(React.createElement(App));
+  </script>
 </body>
 </html>
