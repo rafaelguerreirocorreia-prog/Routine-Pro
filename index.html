@@ -1,323 +1,45 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import Layout from './components/Layout';
-import TaskCard from './components/TaskCard';
-import { TaskTemplate, TaskLog, TaskStatus, Reflection, AppTab, Category, RecurrenceType, ChatMessage } from './types';
-import { Plus, Sparkles, Smile, MessageSquare, TrendingUp, X, Settings2, CalendarDays, Send, Bot, Pause, Trash2, Archive } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { getCoachResponse } from './services/geminiService';
-
-const CATEGORIES: Category[] = ['Trabalho', 'Estudo', 'Saúde', 'Lazer', 'Casa', 'Pessoal'];
-
-const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AppTab>('today');
-  const [noPressure, setNoPressure] = useState(false);
-  
-  const [templates, setTemplates] = useState<TaskTemplate[]>(() => JSON.parse(localStorage.getItem('rp_templates') || '[]'));
-  const [logs, setLogs] = useState<TaskLog[]>(() => JSON.parse(localStorage.getItem('rp_logs') || '[]'));
-  const [reflections, setReflections] = useState<Reflection[]>(() => JSON.parse(localStorage.getItem('rp_reflections') || '[]'));
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => JSON.parse(localStorage.getItem('rp_chat') || '[]'));
-  
-  const [isAdding, setIsAdding] = useState(false);
-  const [newTemplate, setNewTemplate] = useState<Partial<TaskTemplate>>({
-    title: '', category: 'Trabalho', priority: 'média', recurrence: 'daily', daysOfWeek: [1,2,3,4,5]
-  });
-
-  const [chatInput, setChatInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    localStorage.setItem('rp_templates', JSON.stringify(templates));
-    localStorage.setItem('rp_logs', JSON.stringify(logs));
-    localStorage.setItem('rp_reflections', JSON.stringify(reflections));
-    localStorage.setItem('rp_chat', JSON.stringify(chatHistory));
-  }, [templates, logs, reflections, chatHistory]);
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const dayOfWeek = new Date().getDay();
-
-  // Cálculo de Streaks
-  const getStreak = (taskId: string) => {
-    let streak = 0;
-    const sortedLogs = logs
-      .filter(l => l.taskId === taskId)
-      .sort((a, b) => b.date.localeCompare(a.date));
-    
-    let currentDate = new Date();
-    // Se hoje ainda não foi feito, começar a contar de ontem
-    const hasDoneToday = sortedLogs.some(l => l.date === todayStr && l.status === 'done');
-    if (!hasDoneToday) currentDate.setDate(currentDate.getDate() - 1);
-
-    for (const log of sortedLogs) {
-      const logDate = log.date;
-      const currentStr = currentDate.toISOString().split('T')[0];
-      if (logDate === currentStr && log.status === 'done') {
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else if (logDate < currentStr) {
-        break;
-      }
-    }
-    return streak;
-  };
-
-  const todayTasks = useMemo(() => {
-    return templates
-      .filter(t => {
-        if (!t.active || t.isArchived || t.isPaused) return false;
-        if (t.recurrence === 'daily') return true;
-        if (t.recurrence === 'weekly' && t.daysOfWeek?.includes(dayOfWeek)) return true;
-        if (t.recurrence === 'none' && t.startDate === todayStr) return true;
-        return false;
-      })
-      .map(t => ({
-        ...t,
-        status: logs.find(l => l.taskId === t.id && l.date === todayStr)?.status || 'todo' as TaskStatus,
-        justification: logs.find(l => l.taskId === t.id && l.date === todayStr)?.justification,
-        streak: getStreak(t.id)
-      }));
-  }, [templates, logs, todayStr, dayOfWeek]);
-
-  const updateStatus = (taskId: string, status: TaskStatus, justification?: string) => {
-    setLogs(prev => {
-      const filtered = prev.filter(l => !(l.taskId === taskId && l.date === todayStr));
-      return [{ id: ${taskId}-${todayStr}, taskId, date: todayStr, status, justification }, ...filtered];
-    });
-  };
-
-  const addTemplate = () => {
-    if (!newTemplate.title) return;
-    const t: TaskTemplate = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: newTemplate.title,
-      category: newTemplate.category as Category,
-      priority: newTemplate.priority as any,
-      recurrence: newTemplate.recurrence as RecurrenceType,
-      daysOfWeek: newTemplate.daysOfWeek,
-      startDate: todayStr,
-      active: true,
-    };
-    setTemplates(prev => [t, ...prev]);
-    setIsAdding(false);
-  };
-
-  const sendChatMessage = async () => {
-    if (!chatInput.trim() || isTyping) return;
-    const userMsg: ChatMessage = { role: 'user', text: chatInput, timestamp: Date.now() };
-    setChatHistory(prev => [...prev, userMsg]);
-    setChatInput('');
-    setIsTyping(true);
-
-    try {
-      const reply = await getCoachResponse(chatInput, chatHistory, templates, logs, reflections);
-      const botMsg: ChatMessage = { role: 'model', text: reply, timestamp: Date.now() };
-      setChatHistory(prev => [...prev, botMsg]);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  const statsData = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      const ds = d.toISOString().split('T')[0];
-      const dayLogs = logs.filter(l => l.date === ds);
-      const done = dayLogs.filter(l => l.status === 'done').length;
-      return { 
-        name: d.toLocaleDateString('pt-PT', { weekday: 'short' }), 
-        perc: dayLogs.length ? (done / dayLogs.length) * 100 : 0 
-      };
-    });
-  }, [logs]);
-
-  useEffect(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), [chatHistory, isTyping]);
-
-  return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} noPressure={noPressure} setNoPressure={setNoPressure}>
-      {activeTab === 'today' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-3xl font-black text-white tracking-tighter">
-              Hoje, {new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}
-            </h2>
-            <p className="text-neutral-500 font-medium">
-              {todayTasks.length === 0 ? "Dia de descanso? Tu decides." : Faltam ${todayTasks.filter(t => t.status === 'todo').length} passos para hoje.}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            {todayTasks.length > 0 ? (
-              todayTasks.map(t => <TaskCard key={t.id} task={t} onUpdateStatus={updateStatus} />)
-            ) : (
-              <div className="py-20 text-center border-2 border-dashed border-neutral-900 rounded-[40px] bg-neutral-900/10">
-                <Sparkles size={48} className="mx-auto text-neutral-800 mb-4" />
-                <p className="text-neutral-500 font-bold">A tua folha está em branco.</p>
-                <button onClick={() => setActiveTab('routine')} className="text-emerald-500 mt-2 font-black uppercase text-xs tracking-widest">Definir Rotina</button>
-              </div>
-            )}
-          </div>
-          
-          <button onClick={() => setIsAdding(true)} className="fixed bottom-32 right-6 bg-emerald-500 text-black p-5 rounded-3xl shadow-2xl shadow-emerald-500/20 active:scale-90 transition-transform z-40">
-            <Plus size={28} strokeWidth={3} />
-          </button>
-        </div>
-      )}
-
-      {activeTab === 'routine' && (
-        <div className="space-y-6 animate-in fade-in duration-500">
-          <h2 className="text-2xl font-black text-white">Gestão de Rotina</h2>
-          <div className="grid gap-4">
-            {templates.filter(t => !t.isArchived).map(t => (
-              <div key={t.id} className="p-5 bg-neutral-900/50 border border-neutral-800 rounded-[32px] flex items-center justify-between group">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-neutral-500 uppercase">{t.category}</span>
-                    <span className="text-[9px] font-black text-emerald-500 uppercase">{t.recurrence}</span>
-                  </div>
-                  <h4 className="font-bold text-white group-hover:text-emerald-400 transition-colors">{t.title}</h4>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setTemplates(prev => prev.map(item => item.id === t.id ? {...item, isPaused: !item.isPaused} : item))} className={p-2 rounded-xl border ${t.isPaused ? 'bg-amber-500 text-black border-amber-500' : 'border-neutral-700 text-neutral-500'}}>
-                    <Pause size={16} />
-                  </button>
-                  <button onClick={() => setTemplates(prev => prev.map(item => item.id === t.id ? {...item, isArchived: true} : item))} className="p-2 rounded-xl border border-neutral-700 text-neutral-500 hover:text-rose-500">
-                    <Archive size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'coach' && (
-        <div className="flex flex-col h-[calc(100vh-180px)] animate-in slide-in-from-right-4 duration-500">
-          <div className="flex-1 overflow-y-auto space-y-4 px-2 custom-scrollbar">
-            {chatHistory.length === 0 && (
-              <div className="text-center py-20 space-y-4 opacity-40">
-                <Bot size={60} className="mx-auto" />
-                <p className="font-bold text-sm">Olá! Eu sou o teu Coach de Rotina.<br/>Como te posso ajudar hoje?</p>
-              </div>
-            )}
-            {chatHistory.map((msg, i) => (
-              <div key={i} className={flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}}>
-                <div className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed ${
-                  msg.role === 'user' 
-                  ? 'bg-emerald-500 text-black font-medium' 
-                  : 'bg-neutral-900 text-neutral-100 border border-neutral-800'
-                }`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-neutral-900 p-4 rounded-3xl flex gap-1 animate-pulse">
-                  <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full" />
-                  <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full" />
-                  <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full" />
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
-          
-          <div className="mt-4 flex gap-2">
-            <input 
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
-              placeholder="Pergunta algo sobre a tua rotina..."
-              className="flex-1 bg-neutral-900 border border-neutral-800 rounded-2xl px-4 py-3 text-sm focus:ring-1 focus:ring-emerald-500 outline-none"
-            />
-            <button onClick={sendChatMessage} className="bg-white text-black p-3 rounded-2xl active:scale-90 transition-transform shadow-lg shadow-white/5">
-              <Send size={20} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'stats' && (
-        <div className="space-y-8 animate-in fade-in duration-500">
-          <h2 className="text-2xl font-black text-white">Evolução Gráfica</h2>
-          <div className="bg-neutral-900/30 p-6 rounded-[40px] border border-neutral-800">
-             <h3 className="text-xs font-black uppercase text-neutral-500 mb-6 tracking-widest">Consistência 7 Dias (%)</h3>
-             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={statsData}>
-                  <defs>
-                    <linearGradient id="colorPerc" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                  <XAxis dataKey="name" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis hide domain={[0, 100]} />
-                  <Tooltip 
-                    contentStyle={{backgroundColor: '#0a0a0a', border: '1px solid #262626', borderRadius: '16px', fontSize: '12px'}}
-                  />
-                  <Area type="monotone" dataKey="perc" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorPerc)" />
-                </AreaChart>
-              </ResponsiveContainer>
-             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-6 bg-neutral-900/50 rounded-[32px] border border-neutral-800 text-center">
-              <span className="text-[10px] font-black text-neutral-500 uppercase">Total de Hábitos</span>
-              <p className="text-3xl font-black text-emerald-500 mt-1">{templates.length}</p>
-            </div>
-            <div className="p-6 bg-neutral-900/50 rounded-[32px] border border-neutral-800 text-center">
-              <span className="text-[10px] font-black text-neutral-500 uppercase">Dias Registados</span>
-              <p className="text-3xl font-black text-indigo-500 mt-1">{[...new Set(logs.map(l => l.date))].length}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isAdding && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[60] flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-300">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-[40px] p-8 w-full max-w-sm space-y-6">
-            <h3 className="text-xl font-black text-white">Novo Compromisso</h3>
-            <div className="space-y-4">
-              <input 
-                autoFocus
-                placeholder="Ex: Beber 2L de Água"
-                className="w-full bg-black border border-neutral-800 rounded-2xl p-4 font-bold text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                value={newTemplate.title}
-                onChange={e => setNewTemplate({...newTemplate, title: e.target.value})}
-              />
-              <div className="flex gap-2">
-                {CATEGORIES.slice(0,3).map(c => (
-                  <button key={c} onClick={() => setNewTemplate({...newTemplate, category: c})} 
-                    className={flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${newTemplate.category === c ? 'bg-emerald-500 text-black' : 'bg-neutral-800 text-neutral-500'}}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-              <select 
-                className="w-full bg-neutral-800 p-4 rounded-2xl font-bold text-neutral-300 outline-none"
-                value={newTemplate.recurrence}
-                onChange={e => setNewTemplate({...newTemplate, recurrence: e.target.value as any})}
-              >
-                <option value="daily">Repetir Diariamente</option>
-                <option value="weekly">Dias da Semana</option>
-                <option value="none">Evento Único</option>
-              </select>
-              <button onClick={addTemplate} className="w-full bg-emerald-500 text-black p-4 rounded-2xl font-black text-lg shadow-xl shadow-emerald-500/10 active:scale-95 transition-transform">
-                Guardar no Plano
-              </button>
-              <button onClick={() => setIsAdding(false)} className="w-full text-neutral-500 font-bold text-sm">Cancelar</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </Layout>
-  );
-};
-
-export default App;
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolve - Productivity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+            color: #f5f5f5;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #171717;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #525252;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+</head>
+<body class="bg-neutral-950 text-neutral-100 min-h-screen">
+    <div id="root"></div>
+</body>
+</html>
