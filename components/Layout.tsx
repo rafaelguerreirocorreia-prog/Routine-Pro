@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle2, BarChart3, PenLine, CloudRain, RotateCcw, MessageCircle } from 'lucide-react';
+import { CheckCircle2, BarChart3, CloudRain, RotateCcw, MessageCircle, LogOut } from 'lucide-react';
 import { AppTab } from '../types';
 
 interface LayoutProps {
@@ -9,9 +9,10 @@ interface LayoutProps {
   setActiveTab: (tab: AppTab) => void;
   noPressure: boolean;
   setNoPressure: (v: boolean) => void;
+  onLogout: () => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noPressure, setNoPressure }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noPressure, setNoPressure, onLogout }) => {
   return (
     <div className={`min-h-screen pb-24 ${noPressure ? 'bg-neutral-900/40' : 'bg-neutral-950'} transition-all duration-700`}>
       <header className="p-6 flex justify-between items-center sticky top-0 bg-neutral-950/80 backdrop-blur-md z-40 border-b border-neutral-800">
@@ -25,17 +26,27 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noPr
           </div>
         </div>
         
-        <button 
-          onClick={() => setNoPressure(!noPressure)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
-            noPressure 
-            ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
-            : 'bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-600'
-          }`}
-        >
-          <CloudRain size={14} />
-          {noPressure ? 'Modo Zen ON' : 'Foco'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setNoPressure(!noPressure)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
+              noPressure 
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
+              : 'bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-600'
+            }`}
+          >
+            <CloudRain size={14} />
+            {noPressure ? 'Modo Zen' : 'Foco'}
+          </button>
+          
+          <button 
+            onClick={onLogout}
+            className="p-2.5 bg-neutral-900 text-neutral-500 rounded-2xl border border-neutral-800 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+            title="Sair"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8">

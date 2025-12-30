@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, X, Clock, AlertCircle, Flame } from 'lucide-react';
 import { Task, TaskStatus } from '../types';
 
@@ -11,6 +11,13 @@ interface TaskCardProps {
 const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   const [showJustify, setShowJustify] = useState(false);
   const [justification, setJustification] = useState(task.justification || '');
+
+  // Sincronizar showJustify com o estado da tarefa
+  useEffect(() => {
+    if (task.status !== 'missed') {
+      setShowJustify(false);
+    }
+  }, [task.status]);
 
   const statusColors = {
     todo: 'border-neutral-800 bg-neutral-900/20 text-neutral-400',
@@ -44,15 +51,27 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
         </div>
         
         <div className="flex gap-2">
-          <StatusButton active={task.status === 'done'} onClick={() => onUpdateStatus(task.id, 'done')} color="emerald" icon={<Check size={18} />} />
-          <StatusButton active={task.status === 'partial'} onClick={() => onUpdateStatus(task.id, 'partial')} color="amber" icon={<AlertCircle size={18} />} />
+          <StatusButton 
+            active={task.status === 'done'} 
+            onClick={() => onUpdateStatus(task.id, 'done')} 
+            color="emerald" 
+            icon={<Check size={18} />} 
+          />
+          <StatusButton 
+            active={task.status === 'partial'} 
+            onClick={() => onUpdateStatus(task.id, 'partial')} 
+            color="amber" 
+            icon={<AlertCircle size={18} />} 
+          />
           <StatusButton 
             active={task.status === 'missed'} 
             onClick={() => {
+              // Se já estiver em missed, o toggle vai para todo e fechamos a justificativa
               if (task.status === 'missed') {
-                onUpdateStatus(task.id, 'todo');
+                onUpdateStatus(task.id, 'missed');
                 setShowJustify(false);
               } else {
+                // Caso contrário, ativamos missed e abrimos a justificativa
                 onUpdateStatus(task.id, 'missed');
                 setShowJustify(true);
               }
@@ -86,12 +105,18 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
 
 const StatusButton = ({ active, onClick, color, icon }: any) => {
   const colors: any = {
-    emerald: active ? 'bg-emerald-500 text-black' : 'bg-neutral-800/50 text-neutral-500 hover:text-emerald-400',
-    amber: active ? 'bg-amber-500 text-black' : 'bg-neutral-800/50 text-neutral-500 hover:text-amber-400',
-    rose: active ? 'bg-rose-500 text-black' : 'bg-neutral-800/50 text-neutral-500 hover:text-rose-400',
+    emerald: active ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'bg-neutral-800/50 text-neutral-500 hover:text-emerald-400',
+    amber: active ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'bg-neutral-800/50 text-neutral-500 hover:text-amber-400',
+    rose: active ? 'bg-rose-500 text-black shadow-lg shadow-rose-500/20' : 'bg-neutral-800/50 text-neutral-500 hover:text-rose-400',
   };
   return (
-    <button onClick={onClick} className={`p-2.5 rounded-2xl transition-all duration-300 ${colors[color]} ${active ? 'scale-110 shadow-lg' : 'hover:scale-105'}`}>
+    <button 
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }} 
+      className={`p-2.5 rounded-2xl transition-all duration-300 ${colors[color]} ${active ? 'scale-110' : 'hover:scale-105'}`}
+    >
       {icon}
     </button>
   );

@@ -3,6 +3,12 @@ export type TaskStatus = 'todo' | 'done' | 'partial' | 'missed';
 export type Category = 'Trabalho' | 'Estudo' | 'Saúde' | 'Lazer' | 'Casa' | 'Pessoal';
 export type RecurrenceType = 'none' | 'daily' | 'weekly';
 
+export interface User {
+  id: string;
+  email: string;
+  name: string; // Tornar o nome obrigatório
+}
+
 export interface TaskTemplate {
   id: string;
   title: string;
@@ -17,7 +23,6 @@ export interface TaskTemplate {
   time?: string;
 }
 
-// Added Task interface to fix "Module '../types' has no exported member 'Task'" error
 export interface Task extends TaskTemplate {
   status: TaskStatus;
   justification?: string;
