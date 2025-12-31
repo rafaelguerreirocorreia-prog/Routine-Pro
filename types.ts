@@ -6,7 +6,7 @@ export type RecurrenceType = 'none' | 'daily' | 'weekly';
 export interface User {
   id: string;
   email: string;
-  name: string; // Tornar o nome obrigatório
+  name: string;
 }
 
 export interface TaskTemplate {
@@ -25,6 +25,7 @@ export interface TaskTemplate {
 
 export interface Task extends TaskTemplate {
   status: TaskStatus;
+  streak?: number;
   justification?: string;
 }
 

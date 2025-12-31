@@ -21,7 +21,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
 
   const statusColors = {
     todo: 'border-neutral-800 bg-neutral-900/20 text-neutral-400',
-    done: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400 scale-[1.01] shadow-lg shadow-emerald-500/5',
+    done: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-500 scale-[1.01] shadow-lg shadow-emerald-500/5',
     partial: 'border-amber-500/50 bg-amber-500/10 text-amber-400',
     missed: 'border-rose-500/50 bg-rose-500/10 text-rose-400',
   };
@@ -105,7 +105,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
 
 const StatusButton = ({ active, onClick, color, icon }: any) => {
   const colors: any = {
-    emerald: active ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'bg-neutral-800/50 text-neutral-500 hover:text-emerald-400',
+    emerald: active ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'bg-neutral-800/50 text-neutral-500 hover:text-emerald-500',
     amber: active ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'bg-neutral-800/50 text-neutral-500 hover:text-amber-400',
     rose: active ? 'bg-rose-500 text-black shadow-lg shadow-rose-500/20' : 'bg-neutral-800/50 text-neutral-500 hover:text-rose-400',
   };
