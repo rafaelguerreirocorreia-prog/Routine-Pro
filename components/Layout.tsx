@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { CheckCircle2, BarChart3, CloudRain, RotateCcw, MessageCircle, LogOut } from 'lucide-react';
-import { AppTab } from '../types';
+import { CheckCircle2, BarChart3, CloudRain, RotateCcw, MessageCircle, Users } from 'lucide-react';
+import { AppTab, User } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,9 +10,10 @@ interface LayoutProps {
   noPressure: boolean;
   setNoPressure: (v: boolean) => void;
   onLogout: () => void;
+  user: User;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noPressure, setNoPressure, onLogout }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noPressure, setNoPressure, onLogout, user }) => {
   return (
     <div className={`min-h-screen pb-24 ${noPressure ? 'bg-neutral-900/40' : 'bg-neutral-950'} transition-all duration-700`}>
       <header className="p-6 flex justify-between items-center sticky top-0 bg-neutral-950/80 backdrop-blur-md z-40 border-b border-neutral-800">
@@ -22,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noPr
           </h1>
           <div className="flex items-center gap-2 mt-0.5">
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-            <p className="text-neutral-500 text-[10px] uppercase font-bold tracking-widest">Evolução Contínua</p>
+            <p className="text-neutral-500 text-[10px] uppercase font-bold tracking-widest">Perfil: {user.name}</p>
           </div>
         </div>
         
@@ -36,15 +37,16 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noPr
             }`}
           >
             <CloudRain size={14} />
-            {noPressure ? 'Modo Zen' : 'Foco'}
+            {noPressure ? 'Zen' : 'Foco'}
           </button>
           
           <button 
             onClick={onLogout}
-            className="p-2.5 bg-neutral-900 text-neutral-500 rounded-2xl border border-neutral-800 hover:text-rose-500 hover:border-rose-500/30 transition-all"
-            title="Sair"
+            className="flex items-center gap-2 px-3 py-2 bg-neutral-900 text-neutral-500 rounded-2xl border border-neutral-800 hover:text-white hover:border-neutral-600 transition-all text-[10px] font-black uppercase tracking-tighter"
+            title="Trocar Utilizador"
           >
-            <LogOut size={16} />
+            <Users size={14} />
+            Sair
           </button>
         </div>
       </header>

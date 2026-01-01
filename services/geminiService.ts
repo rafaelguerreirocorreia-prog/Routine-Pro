@@ -29,8 +29,15 @@ export async function getCoachResponse(
 ) {
   const context = getContextString(templates, logs, reflections);
   
+  // Fixed: Map the provided history to Gemini's expected format and pass it to ai.chats.create
+  const geminiHistory = history.map(msg => ({
+    role: msg.role === 'user' ? 'user' : 'model',
+    parts: [{ text: msg.text }]
+  }));
+
   const chat = ai.chats.create({
     model: 'gemini-3-flash-preview',
+    history: geminiHistory,
     config: {
       systemInstruction: `
         És o Coach Evolutivo da app 'Routine Pro'. 
@@ -49,17 +56,12 @@ export async function getCoachResponse(
     },
   });
 
-  // Reformat history for Gemini API
-  const contents = history.map(msg => ({
-    role: msg.role === 'user' ? 'user' : 'model',
-    parts: [{ text: msg.text }]
-  }));
-
   const response = await chat.sendMessage({ 
     message: userInput 
   });
   
-  return response.text;
+  // Fixed: Ensure we return a string, response.text is a getter
+  return response.text || '';
 }
 
 export async function getRoutineAdjustments(logs: TaskLog[], templates: TaskTemplate[]) {
@@ -89,5 +91,13 @@ export async function getRoutineAdjustments(logs: TaskLog[], templates: TaskTemp
       },
     },
   });
-  return JSON.parse(response.text);
+  
+  // Fixed: Safely parse JSON from the response text
+  const jsonStr = response.text?.trim() || '{}';
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    console.error("Failed to parse coach adjustments:", e);
+    return { suggestions: [], empathyQuote: "Continua focado, um passo de cada vez." };
+  }
 }

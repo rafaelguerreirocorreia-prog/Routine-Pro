@@ -26,6 +26,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
     missed: 'border-rose-500/50 bg-rose-500/10 text-rose-400',
   };
 
+  const handleStatusToggle = (target: TaskStatus) => {
+    // Se clicar no que já está ativo, volta para 'todo'
+    const newStatus = task.status === target ? 'todo' : target;
+    onUpdateStatus(task.id, newStatus);
+    
+    // Gestão da visibilidade do campo de justificativa
+    if (newStatus === 'missed') {
+      setShowJustify(true);
+    } else {
+      setShowJustify(false);
+    }
+  };
+
   return (
     <div className={`p-4 rounded-3xl border transition-all duration-300 ${statusColors[task.status]} mb-4 group`}>
       <div className="flex justify-between items-start">
@@ -53,29 +66,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
         <div className="flex gap-2">
           <StatusButton 
             active={task.status === 'done'} 
-            onClick={() => onUpdateStatus(task.id, 'done')} 
+            onClick={() => handleStatusToggle('done')} 
             color="emerald" 
             icon={<Check size={18} />} 
           />
           <StatusButton 
             active={task.status === 'partial'} 
-            onClick={() => onUpdateStatus(task.id, 'partial')} 
+            onClick={() => handleStatusToggle('partial')} 
             color="amber" 
             icon={<AlertCircle size={18} />} 
           />
           <StatusButton 
             active={task.status === 'missed'} 
-            onClick={() => {
-              // Se já estiver em missed, o toggle vai para todo e fechamos a justificativa
-              if (task.status === 'missed') {
-                onUpdateStatus(task.id, 'missed');
-                setShowJustify(false);
-              } else {
-                // Caso contrário, ativamos missed e abrimos a justificativa
-                onUpdateStatus(task.id, 'missed');
-                setShowJustify(true);
-              }
-            }} 
+            onClick={() => handleStatusToggle('missed')} 
             color="rose" 
             icon={<X size={18} />} 
           />

@@ -1,7 +1,8 @@
 
 export type TaskStatus = 'todo' | 'done' | 'partial' | 'missed';
-export type Category = 'Trabalho' | 'Estudo' | 'Saúde' | 'Lazer' | 'Casa' | 'Pessoal';
-export type RecurrenceType = 'none' | 'daily' | 'weekly';
+export type Category = 'Saúde' | 'Lazer' | 'Trabalho' | 'Casa' | 'Estudo';
+export type RecurrenceType = 'daily' | 'weekly' | 'specific';
+export type DayPeriod = 'morning' | 'day' | 'night' | 'continuous';
 
 export interface User {
   id: string;
@@ -15,12 +16,14 @@ export interface TaskTemplate {
   category: Category;
   priority: 'baixa' | 'média' | 'alta';
   recurrence: RecurrenceType;
-  daysOfWeek?: number[]; 
-  startDate: string;
+  daysOfWeek?: number[]; // 0-6 (Dom-Sab)
+  startDate: string; // Usado para 'specific' (YYYY-MM-DD)
   active: boolean;
   isPaused?: boolean;
   isArchived?: boolean;
   time?: string;
+  period: DayPeriod;
+  timeDescription?: string;
 }
 
 export interface Task extends TaskTemplate {
